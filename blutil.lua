@@ -1,5 +1,6 @@
-local computer = require('computer')
 local blutil = {}
+
+blutil.isOpenComputers = not not _OSVERSION
 
 function blutil.print(...)
 	local args = { ... }
@@ -114,14 +115,14 @@ local timers = {}
 
 function blutil.time(label)
 	assert(type(label) == 'string', 'Expected string, got ' .. type(label))
-	timers[label] = computer.uptime()
+	timers[label] = blutil.clock()
 end
 
 function blutil.timeEnd(label)
 	assert(type(label) == 'string', 'Expected string, got ' .. type(label))
 	assert(timers[label] ~= nil, 'Timer "' .. label .. '" does not exist.')
 	local formattedTime
-	local time = computer.uptime() - timers[label]
+	local time = blutil.clock() - timers[label]
 	if time > 1 then
 		formattedTime = blutil.round(time, 3) .. 's'
 	else
@@ -139,6 +140,40 @@ end
 function blutil.require(packageName)
 	package.loaded[packageName] = nil
 	return require(packageName)
+end
+
+function blutil.benchmark(name, func, iterations)
+	local start = blutil.clock()
+	for i = 1, iterations do
+		func()
+	end
+	local time = blutil.clock() - start
+	print(name .. " took " .. time .. " seconds")
+end
+
+---@return number
+function blutil.clock()
+	if blutil.isOpenComputers then
+		return require('computer').uptime()
+	else
+		return os.clock()
+	end
+end
+
+--- concat function to avoid concatatining with nil, should only receive string or nil
+function blutil.concat(a, b)
+	if a == nil then
+		return b
+	elseif b == nil then
+		return a
+	else
+		return a .. b
+	end
+end
+
+function blutil.transparentPrint(...)
+	print(...)
+	return ...
 end
 
 return blutil
